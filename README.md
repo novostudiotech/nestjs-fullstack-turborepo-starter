@@ -2,6 +2,65 @@
 
 Production-ready fullstack monorepo starter with **NestJS** API, **React** customer app, **React Admin** dashboard, and **Turborepo** for orchestration.
 
+## Quick Start
+
+One command to create a new project:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/novostudiotech/nestjs-fullstack-turborepo-starter/main/scripts/create-project.sh) my-project
+```
+
+This will:
+1. Clone the template with all submodules
+2. Detach submodules (API becomes a regular directory you own)
+3. Initialize fresh git history
+4. Install all dependencies
+5. Copy `.env.example` files
+6. Start Docker services (PostgreSQL, Redis)
+
+Then:
+
+```bash
+cd my-project
+pnpm dev                      # Start all apps
+```
+
+| App | URL |
+|-----|-----|
+| API | http://localhost:3000 |
+| Customer App | http://localhost:5175 |
+| Admin | http://localhost:5176 |
+
+### Manual Setup
+
+<details>
+<summary>If you prefer to set up manually</summary>
+
+```bash
+git clone --recurse-submodules https://github.com/novostudiotech/nestjs-fullstack-turborepo-starter.git my-project
+cd my-project
+
+# Detach API submodule (make it a regular directory)
+git rm --cached apps/api
+rm .gitmodules
+git add apps/api/
+
+# Add API to workspace
+cat > pnpm-workspace.yaml << 'EOF'
+packages:
+  - 'apps/*'
+  - 'packages/*'
+EOF
+
+# Install & run
+pnpm install
+docker compose up -d
+cp apps/api/.env.example apps/api/.env
+pnpm dev
+```
+
+</details>
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -25,80 +84,44 @@ apps/
   admin/     — Admin dashboard (React Admin + MUI)
 packages/
   common/    — Shared utilities and types
-scripts/     — Turbo runners, worktree setup, API client generation
+scripts/
+  create-project.sh  — One-command project setup
+  turbo-run.sh       — Turbo wrapper (resolves package names from directories)
+  setup-worktree.sh  — Isolated feature development
 ```
 
-## Quick Start
-
-### 1. Create your project from this template
+## Commands
 
 ```bash
-# Clone with submodules
-git clone --recurse-submodules https://github.com/novostudiotech/nestjs-fullstack-turborepo-starter.git my-project
-cd my-project
-
-# Detach from template — make API a regular directory (not a submodule)
-git rm --cached apps/api
-rm .gitmodules
-git add apps/api/
-```
-
-Now `apps/api` is a regular directory in your repo. Commit and start building.
-
-### 2. Add API to workspace
-
-Update `pnpm-workspace.yaml` to include the API:
-
-```yaml
-packages:
-  - 'apps/*'
-  - 'packages/*'
-```
-
-Update `apps/api/package.json` name to match your project scope (e.g. `@my-project/api`).
-
-### 3. Install and run
-
-```bash
-pnpm install
-
-# Start infrastructure
-docker compose up -d   # PostgreSQL + Redis
-
-# Configure API
-cp apps/api/.env.example apps/api/.env
-
-# Start everything
-pnpm dev
-```
-
-### Per-App Commands
-
-```bash
-pnpm --filter app dev       # Customer app  → http://localhost:5175
-pnpm --filter admin dev     # Admin panel   → http://localhost:5176
-pnpm --filter api dev       # API server    → http://localhost:3000
+pnpm dev                      # Start all apps in parallel
+pnpm build                    # Build everything
+pnpm build api                # Build single app (resolves name from package.json)
+pnpm build admin
+pnpm build app
+pnpm lint                     # Lint entire codebase (Biome)
+pnpm test                     # Run all tests
+pnpm api:generate             # Generate TypeScript API clients from OpenAPI spec
 ```
 
 ## What's Included
 
 ### Monorepo Infrastructure
-- **Turborepo** — parallel builds with caching, task dependencies (`^build`)
-- **pnpm workspaces** — shared dependencies, workspace protocol
+- **Turborepo** — parallel builds with caching, task dependencies
+- **pnpm workspaces** — shared dependencies
 - **Biome** — fast linting and formatting (replaces ESLint + Prettier)
 - **Husky + lint-staged** — pre-commit linting
 - **commitlint** — Conventional Commits enforcement
 
 ### CI/CD (GitHub Actions)
-- **CI** (on PRs): Build validation, lint, secret scanning (TruffleHog). Unit/E2E test templates included as comments.
-- **CD** (on push to main): Change detection + conditional deploy jobs. Deploy targets (Cloudflare Pages, Docker registry) are configurable.
+- **CI** (on PRs): Build validation, lint, secret scanning. Unit/E2E test templates included.
+- **CD** (on push to main): Change detection + conditional deploy. Configurable targets (Cloudflare Pages, Docker registry).
 
 ### Docker
-- Multi-stage Dockerfile with separate `api` and `frontend` targets
+- Multi-stage Dockerfile with `turbo prune` for efficient per-app images
 - `docker-compose.yml` with PostgreSQL 16, test DB, and Redis 7
 
 ### Developer Workflow
-- **Worktree isolation** — `./scripts/setup-worktree.sh feat/my-feature` creates an isolated working copy with a unique API port (3100-3999)
+- **Worktree isolation** — `./scripts/setup-worktree.sh feat/my-feature` creates an isolated copy with a unique API port
 - **API client generation** — `pnpm api:generate` creates TypeScript clients from OpenAPI spec
 
 ## API (nestjs-starter)
@@ -108,26 +131,17 @@ The API is based on [novostudiotech/nestjs-starter](https://github.com/novostudi
 - NestJS 11 with TypeORM 0.3
 - Better Auth (session-based + Email OTP)
 - PostgreSQL 16+ (Neon-compatible)
-- Zod validation (not class-validator)
+- Zod validation
 - E2E tests with Playwright
-- Resend + React Email for transactional emails
+- Resend + React Email
 
 See the [nestjs-starter docs](https://github.com/novostudiotech/nestjs-starter) for full API documentation.
-
-## Scripts
-
-| Command | Description |
-|---------|-----------|
-| `pnpm dev` | Start all apps in parallel |
-| `pnpm build` | Build all workspace packages |
-| `pnpm lint` | Lint entire codebase (Biome) |
-| `pnpm api:generate` | Generate TypeScript API clients from OpenAPI spec |
 
 ## Code Style
 
 Enforced via [Biome](https://biomejs.dev/) + Husky pre-commit hooks:
 
-- 2 spaces, single quotes, semicolons, trailing commas (ES5), LF, 100 char line width
+- 2 spaces, single quotes, semicolons, trailing commas (ES5), LF, 100 char width
 - [Conventional Commits](https://www.conventionalcommits.org/) via commitlint
 
 ## License
