@@ -4,62 +4,35 @@ Production-ready fullstack monorepo starter with **NestJS** API, **React** custo
 
 ## Quick Start
 
-One command to create a new project:
-
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/novostudiotech/nestjs-fullstack-turborepo-starter/main/scripts/create-project.sh) my-project
+curl -fsSL https://raw.githubusercontent.com/novostudiotech/nestjs-fullstack-turborepo-starter/main/setup.sh | bash
 ```
 
-This will:
-1. Clone the template with all submodules
-2. Detach submodules (API becomes a regular directory you own)
-3. Initialize fresh git history
-4. Install all dependencies
-5. Copy `.env.example` files
-6. Start Docker services (PostgreSQL, Redis)
-
-Then:
+Or clone first:
 
 ```bash
+git clone https://github.com/novostudiotech/nestjs-fullstack-turborepo-starter.git my-project
 cd my-project
-pnpm dev                      # Start all apps
+./setup.sh
 ```
+
+The script asks for a project name, then:
+1. Clones the template (if run via curl)
+2. Pulls & detaches submodules (API becomes a regular directory)
+3. Resets git history (one clean commit, no template baggage)
+4. Configures workspace (all apps in pnpm workspaces)
+5. Copies `.env.example` files
+6. Installs dependencies
+7. Starts Docker (PostgreSQL, Redis)
+8. Deletes itself
+
+After setup: clean `git status`, one commit, ready to code.
 
 | App | URL |
 |-----|-----|
 | API | http://localhost:3000 |
 | Customer App | http://localhost:5175 |
 | Admin | http://localhost:5176 |
-
-### Manual Setup
-
-<details>
-<summary>If you prefer to set up manually</summary>
-
-```bash
-git clone --recurse-submodules https://github.com/novostudiotech/nestjs-fullstack-turborepo-starter.git my-project
-cd my-project
-
-# Detach API submodule (make it a regular directory)
-git rm --cached apps/api
-rm .gitmodules
-git add apps/api/
-
-# Add API to workspace
-cat > pnpm-workspace.yaml << 'EOF'
-packages:
-  - 'apps/*'
-  - 'packages/*'
-EOF
-
-# Install & run
-pnpm install
-docker compose up -d
-cp apps/api/.env.example apps/api/.env
-pnpm dev
-```
-
-</details>
 
 ## Tech Stack
 
@@ -85,9 +58,9 @@ apps/
 packages/
   common/    — Shared utilities and types
 scripts/
-  create-project.sh  — One-command project setup
   turbo-run.sh       — Turbo wrapper (resolves package names from directories)
   setup-worktree.sh  — Isolated feature development
+setup.sh             — First-time setup (self-deletes after use)
 ```
 
 ## Commands
