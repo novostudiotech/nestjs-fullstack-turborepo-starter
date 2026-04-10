@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 
 COMMAND=$1
-FILTER_APPS=$(awk -F',' '{ for( i=1; i<=NF; i++ ) printf "--filter="$i" " }' <<<"$2")
+shift
 
-echo -e "> npx turbo run $COMMAND $FILTER_APPS\n"
+FILTER_ARGS=""
+for app in $(echo "$@" | tr ',' ' '); do
+  # Resolve package name from apps/<app>/package.json or packages/<app>/package.json
+  for dir in apps packages; do
+    pkg="$dir/$app/package.json"
+    if [ -f "$pkg" ]; then
+      name=$(node -p "require('./$pkg').name")
+      FILTER_ARGS="$FILTER_ARGS --filter=$name"
+      break
+    fi
+  done
+done
 
-npx turbo run $COMMAND $FILTER_APPS
+echo -e "> npx turbo run $COMMAND $FILTER_ARGS\n"
+
+npx turbo run $COMMAND $FILTER_ARGS
