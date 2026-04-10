@@ -1,0 +1,21 @@
+{
+  "name": "nestjs-fullstack-turborepo-starter",
+  "private": true,
+  "scripts": {
+    "dev": "./scripts/turbo-run-p.sh dev",
+    "build": "./scripts/turbo-run.sh build",
+    "lint": "./scripts/turbo-run.sh lint",
+    "test": "./scripts/turbo-run.sh test",
+    "api:generate": "bash scripts/generate-api-clients.sh",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.7",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "turbo": "^2.8.17"
+  },
+  "packageManager": "pnpm@10.8.1"
+}

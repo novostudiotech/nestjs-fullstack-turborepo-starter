@@ -1,0 +1,149 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+
+  workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: 'Deploy API'
+        type: boolean
+        default: false
+      deploy_app:
+        description: 'Deploy App'
+        type: boolean
+        default: false
+      deploy_admin:
+        description: 'Deploy Admin'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  NODE_VERSION: '24'
+  # TODO: Set these in repo secrets/variables:
+  # CONTAINER_REGISTRY: your-registry.example.com/your-project
+  # CLOUDFLARE_API_TOKEN: for frontend deployments
+  # CLOUDFLARE_PROJECT_APP: your-cloudflare-pages-project-app
+  # CLOUDFLARE_PROJECT_ADMIN: your-cloudflare-pages-project-admin
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.result.outputs.api }}
+      app: ${{ steps.result.outputs.app }}
+      admin: ${{ steps.result.outputs.admin }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+              - 'Dockerfile'
+            app:
+              - 'apps/app/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+            admin:
+              - 'apps/admin/**'
+              - 'packages/**'
+              - 'pnpm-lock.yaml'
+
+      - name: Resolve deploy targets
+        id: result
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "api=${{ inputs.deploy_api }}" >> $GITHUB_OUTPUT
+            echo "app=${{ inputs.deploy_app }}" >> $GITHUB_OUTPUT
+            echo "admin=${{ inputs.deploy_admin }}" >> $GITHUB_OUTPUT
+          else
+            echo "api=${{ steps.filter.outputs.api }}" >> $GITHUB_OUTPUT
+            echo "app=${{ steps.filter.outputs.app }}" >> $GITHUB_OUTPUT
+            echo "admin=${{ steps.filter.outputs.admin }}" >> $GITHUB_OUTPUT
+          fi
+
+  # TODO: Uncomment and configure for your container registry
+  # api:
+  #   name: Deploy API
+  #   needs: changes
+  #   if: needs.changes.outputs.api == 'true'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #       with:
+  #         submodules: true
+  #     - name: Build and push Docker image
+  #       run: |
+  #         docker build --target api --build-arg appName=api -t $CONTAINER_REGISTRY:${{ github.sha }} .
+  #         docker push $CONTAINER_REGISTRY:${{ github.sha }}
+
+  app:
+    name: Deploy App
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build app
+
+      # TODO: Configure your deployment target
+      # - name: Deploy to Cloudflare Pages
+      #   run: npx wrangler pages deploy apps/app/dist --project-name $CLOUDFLARE_PROJECT_APP
+      #   env:
+      #     CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  admin:
+    name: Deploy Admin
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build admin
+
+      # TODO: Configure your deployment target
+      # - name: Deploy to Cloudflare Pages
+      #   run: npx wrangler pages deploy apps/admin/dist --project-name $CLOUDFLARE_PROJECT_ADMIN
+      #   env:
+      #     CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
