@@ -1,14 +1,10 @@
-import { Admin, Resource, ListGuesser } from 'react-admin';
 import simpleRestProvider from 'ra-data-simple-rest';
+import { Admin } from 'react-admin';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const dataProvider = simpleRestProvider(apiUrl);
+const dataProvider = simpleRestProvider('http://localhost:3000');
 
 export function App() {
   return (
-    <Admin dataProvider={dataProvider}>
-      {/* Add your resources here, e.g.: */}
-      {/* <Resource name="users" list={ListGuesser} /> */}
-    </Admin>
+    <Admin dataProvider={dataProvider}>{/* <Resource name="users" list={ListGuesser} /> */}</Admin>
   );
 }

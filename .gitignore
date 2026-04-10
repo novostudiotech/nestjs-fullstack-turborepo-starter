@@ -7,3 +7,4 @@ dist/
 !.env.example
 .worktrees/
 .DS_Store
+*.tsbuildinfo
